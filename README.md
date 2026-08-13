@@ -66,6 +66,12 @@ rewritten file gets staged deliberately rather than slipping into the commit.
   nested `.tool-versions` overrides the root one.
 - A module with no governing pin, or no `go` directive, is **skipped** rather
   than failed. Not every repo uses asdf.
+- **A `go` directive without a patch is a language version, not a pin.**
+  `go 1.26` says nothing about which patch to build with, so in `exact` mode it
+  accepts any `1.26.x` pin — only a different *minor* is a mismatch. A directive
+  written with a patch (`go 1.26.1`) is held to exact equality.
+- For the same reason `--fix` **refuses** a patchless directive rather than
+  writing `golang 1.26`, which asdf cannot resolve. Set that pin by hand.
 - `go 1.22` and `golang 1.22.0` are treated as equal — a missing patch component
   is zero.
 - Comments in `.tool-versions` are respected, and `--fix` rewrites only the

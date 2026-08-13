@@ -19,8 +19,14 @@ import (
 
 // Version is a parsed Go version. A missing patch component is zero, so
 // `go 1.22` and `golang 1.22.0` compare equal.
+//
+// HasPatch records whether the patch component was written explicitly. It
+// matters because a go directive of `go 1.26` expresses no patch requirement
+// at all — it is a language version, not a toolchain pin — so it must not be
+// read as demanding exactly 1.26.0.
 type Version struct {
 	Major, Minor, Patch int
+	HasPatch            bool
 	Raw                 string
 }
 
@@ -35,7 +41,7 @@ func ParseVersion(s string) (Version, error) {
 		return Version{}, fmt.Errorf("malformed Go version %q", raw)
 	}
 
-	v := Version{Raw: raw}
+	v := Version{Raw: raw, HasPatch: len(parts) == 3}
 	dst := []*int{&v.Major, &v.Minor, &v.Patch}
 	for i, p := range parts {
 		n, err := strconv.Atoi(p)
@@ -121,9 +127,17 @@ func (m Mismatch) String() string {
 }
 
 // satisfied reports whether a pin is acceptable for a go directive under mode.
+//
+// A go directive written without a patch (`go 1.26`) is a language version, not
+// a toolchain pin: it says nothing about which patch to build with. Exact mode
+// therefore compares only major.minor in that case, so `go 1.26` accepts a
+// `golang 1.26.1` pin. Min mode already treats the missing patch as a .0 floor.
 func satisfied(mode Mode, mod, pin Version) bool {
 	if mode == ModeMin {
 		return pin.Compare(mod) >= 0
+	}
+	if !mod.HasPatch {
+		return pin.Major == mod.Major && pin.Minor == mod.Minor
 	}
 	return pin.Equal(mod)
 }
@@ -286,7 +300,17 @@ func Check(root string, mode Mode) ([]Mismatch, error) {
 
 // Fix rewrites the golang line of the mismatch's .tool-versions to the version
 // the go.mod declares, preserving every other line, comments, and the file mode.
+//
+// It refuses when the go directive has no patch component: asdf needs a full
+// version, so writing `golang 1.26` would leave an unresolvable pin.
 func Fix(root string, m Mismatch) error {
+	if !m.Mod.HasPatch {
+		return fmt.Errorf(
+			"%s declares 'go %s' with no patch component; asdf needs a full version, "+
+				"so %s cannot be rewritten automatically — set the pin by hand",
+			m.ModFile, m.Mod.Raw, m.PinFile)
+	}
+
 	pinFile := filepath.Join(root, filepath.FromSlash(m.PinFile))
 
 	info, err := os.Stat(pinFile)

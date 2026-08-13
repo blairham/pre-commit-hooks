@@ -303,6 +303,100 @@ func TestModeMinEqualIsFine(t *testing.T) {
 	}
 }
 
+func TestExactModeAcceptsAnyPatchWhenDirectiveHasNone(t *testing.T) {
+	dir := t.TempDir()
+	// `go 1.26` is a language version, not a toolchain pin — it says nothing
+	// about the patch, so any 1.26.x pin satisfies it.
+	write(t, dir, "go.mod", "module example.com/app\n\ngo 1.26\n")
+	write(t, dir, ".tool-versions", "golang 1.26.1\n")
+
+	got, err := Check(dir, ModeExact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 0 {
+		t.Errorf("go 1.26 should accept a 1.26.x pin, got %v", got)
+	}
+}
+
+func TestExactModeStillFlagsWrongMinorWhenDirectiveHasNoPatch(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "go.mod", "module example.com/app\n\ngo 1.26\n")
+	write(t, dir, ".tool-versions", "golang 1.25.8\n")
+
+	got, err := Check(dir, ModeExact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("a different minor is still a mismatch, got %d", len(got))
+	}
+}
+
+func TestExactModeRequiresExactPatchWhenDirectiveHasOne(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "go.mod", "module example.com/app\n\ngo 1.26.1\n")
+	write(t, dir, ".tool-versions", "golang 1.26.2\n")
+
+	got, err := Check(dir, ModeExact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("an explicit patch must match exactly, got %d", len(got))
+	}
+}
+
+func TestFixRefusesWhenDirectiveHasNoPatch(t *testing.T) {
+	dir := t.TempDir()
+	// Wrong minor, so it is a genuine mismatch — but unfixable automatically:
+	// writing `golang 1.26` would leave an asdf pin that cannot resolve.
+	write(t, dir, "go.mod", "module example.com/app\n\ngo 1.26\n")
+	write(t, dir, ".tool-versions", "golang 1.25.8\n")
+
+	got, err := Check(dir, ModeExact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("want 1 mismatch, got %d", len(got))
+	}
+
+	err = Fix(dir, got[0])
+	if err == nil {
+		t.Fatal("Fix must refuse a patchless go directive")
+	}
+	if !strings.Contains(err.Error(), "patch") {
+		t.Errorf("error should explain the patch problem, got %v", err)
+	}
+
+	// And it must not have touched the file.
+	data, readErr := os.ReadFile(filepath.Join(dir, ".tool-versions"))
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if string(data) != "golang 1.25.8\n" {
+		t.Errorf(".tool-versions was modified despite the refusal: %q", data)
+	}
+}
+
+func TestParseVersionRecordsHasPatch(t *testing.T) {
+	withPatch, err := ParseVersion("1.26.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !withPatch.HasPatch {
+		t.Error("1.26.1 should record HasPatch")
+	}
+	without, err := ParseVersion("1.26")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if without.HasPatch {
+		t.Error("1.26 should not record HasPatch")
+	}
+}
+
 func TestCompareOrdersByComponent(t *testing.T) {
 	tests := []struct {
 		a, b string
