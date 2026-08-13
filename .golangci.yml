@@ -31,6 +31,12 @@ linters:
     errcheck:
       exclude-functions:
       - (*os.File).Close
+      # Diagnostic writes to the command's own output writer. A failed write
+      # to stdout/stderr has no recovery path — the only thing left to do
+      # would be to report it the same way that just failed.
+      - fmt.Fprint
+      - fmt.Fprintf
+      - fmt.Fprintln
 
 formatters:
   enable:
