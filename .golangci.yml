@@ -1,0 +1,47 @@
+# golangci-lint v2 configuration for pre-commit-hooks
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+  - errcheck
+  - govet
+  - ineffassign
+  - staticcheck
+  - unused
+  - misspell
+  - unconvert
+  - gocritic
+  - revive
+
+  exclusions:
+    rules:
+    - path: _test\.go
+      linters:
+      - errcheck
+      - gocritic
+      - revive
+
+  settings:
+    misspell:
+      locale: US
+    errcheck:
+      exclude-functions:
+      - (*os.File).Close
+
+formatters:
+  enable:
+  - gofmt
+  - goimports
+
+  settings:
+    goimports:
+      local-prefixes:
+      - github.com/blairham/pre-commit-hooks
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

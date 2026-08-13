@@ -1,0 +1,13 @@
+- id: check-go-version-sync
+  name: check go version sync (go.mod ↔ .tool-versions)
+  description: |
+    Fails when a go.mod `go` directive and the governing .tool-versions `golang`
+    pin drift apart — they must match so local (asdf) and CI build the same
+    toolchain. The governing pin for each module is the nearest ancestor
+    .tool-versions with a golang line; modules without one are skipped. Nested
+    modules (apps/<svc>/go.mod) are supported. Pass `--fix` via args to rewrite
+    .tool-versions from go.mod instead of just reporting.
+  entry: check-go-version-sync
+  language: golang
+  files: '(^|/)go\.mod$|(^|/)\.tool-versions$'
+  pass_filenames: false

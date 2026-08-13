@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+        # The oldest supported toolchain and a current one: hooks are installed
+        # with GOTOOLCHAIN=local, so this module must build on both.
+        go: [ "1.22", "1.26" ]
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ matrix.go }}
+        cache: true
+
+    - name: Test
+      run: go test -race ./...
+
+    - name: Vet
+      run: go vet ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-go@v6
+      with:
+        go-version: "1.26"
+        cache: true
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v9
+      with:
+        version: latest
+        args: --timeout=5m
+
+  hook:
+    # Proves the hook installs and runs the way a consumer would use it.
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-go@v6
+      with:
+        go-version: "1.26"
+        cache: true
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.x"
+    - name: Install pre-commit
+      run: pip install pre-commit
+    - name: Run hooks against this repo
+      run: pre-commit run --all-files --show-diff-on-failure

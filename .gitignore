@@ -1,0 +1,5 @@
+/bin/
+/build/
+coverage.out
+coverage.html
+.DS_Store

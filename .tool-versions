@@ -1,0 +1,12 @@
+# pre-commit-hooks tool versions managed by asdf
+# See https://asdf-vm.com for usage
+# Install all: asdf install
+
+# This is the toolchain used to DEVELOP this repo. It is deliberately newer than
+# go.mod's `go` directive, which is a compatibility floor for consumers (see the
+# comment in go.mod). That is exactly the case check-go-version-sync's -mode=min
+# exists for, and this repo checks itself that way.
+golang 1.26.1
+
+# Linting (CI-enforced; local convenience)
+golangci-lint 2.12.2
