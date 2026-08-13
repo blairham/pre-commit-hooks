@@ -22,17 +22,30 @@ repos:
     rev: v1.0.0-rc.4
     hooks:
       - id: go-mod-tidy-repo
-      - id: go-fmt-repo
 
-  # Dogfood: this repo's own hook checks this repo's own toolchain pin.
-  - repo: local
+  # Dogfood: this repo's own published hook checks this repo's own pin.
+  # -mode=min because go.mod's directive here is a compatibility floor, not a pin.
+  - repo: https://github.com/blairham/pre-commit-hooks
+    rev: v0.1.0
     hooks:
       - id: check-go-version-sync
-        name: check go version sync (go.mod ↔ .tool-versions)
-        entry: go run ./cmd/check-go-version-sync -mode=min
-        language: system
-        files: '(^|/)go\.mod$|(^|/)\.tool-versions$'
-        pass_filenames: false
+        args: [--mode=min]
+
+  # golangci-lint at commit time, via the upstream hooks (no local scripts).
+  # `golangci-lint-fmt` applies every formatter configured in .golangci.yml
+  # (gofumpt AND goimports, which `go-fmt-repo` could not do);
+  # `golangci-lint` lints only what changed since HEAD — the whole-repo,
+  # enforced lint stays in CI, because --new-from-rev can't see whole-module
+  # linters like `unused`.
+  #
+  # Unlike the other Go repos here, golangci-lint is deliberately NOT in a
+  # go.mod `tool` block — this repo adds no dependencies (see AGENTS.md). Keep
+  # this `rev` in lockstep with .tool-versions and the CI action instead.
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v2.12.2
+    hooks:
+      - id: golangci-lint-fmt
+      - id: golangci-lint
 
   # Secret scanning
   - repo: https://github.com/gitleaks/gitleaks
