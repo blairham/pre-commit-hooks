@@ -82,9 +82,65 @@ dependency — most often something in a `tool` block like `golangci-lint` — a
 `.tool-versions` silently stays behind. Nothing fails until a build behaves
 differently locally than in CI.
 
+### `check-license-headers`
+
+Fails when a source file does not carry an SPDX header.
+
+A repository's root `LICENSE` governs the repository. It does not travel with a
+file that someone copies out of it — which is exactly the case where
+attribution matters most. The per-file header does, so the header is the thing
+that actually keeps a notice attached to the work.
+
+```yaml
+repos:
+  - repo: https://github.com/blairham/pre-commit-hooks
+    rev: v0.2.0
+    hooks:
+      - id: check-license-headers
+        args: [--license, Apache-2.0]
+```
+
+```
+internal/parser/lexer.go: missing SPDX-License-Identifier:
+internal/parser/token.go: declares "MIT", want "Apache-2.0"
+
+A repository's LICENSE does not travel with a file copied out of it.
+The header does. Add to the top of each file listed above:
+
+  // SPDX-FileCopyrightText: 2026 Jane Doe
+  // SPDX-License-Identifier: Apache-2.0
+
+Or run with -fix to insert it.
+```
+
+It checks the [SPDX short form](https://spdx.dev/learn/handling-license-info/)
+standardized by the REUSE spec and used by the Linux kernel, rather than a
+license's full boilerplate — two lines, machine-readable by license scanners.
+
+#### Flags
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--license` | any | Require this exact SPDX identifier. Empty accepts any one, which is what a mixed-license tree wants. |
+| `--copyright` | `true` | Also require an `SPDX-FileCopyrightText:` line. |
+| `--copyright-text` | — | Text written after the copyright tag by `--fix`, e.g. `'2026 Jane Doe'`. |
+| `--fix` | `false` | Insert the missing header instead of failing. |
+| `--ext` | `.go` | Extensions to match when walking a tree; ignored when pre-commit passes filenames. |
+| `--exclude` | — | Comma-separated patterns to skip, matched against the path and its base name. |
+| `--head` | `5` | How many leading lines to search. Enough to clear a build constraint. |
+| `--root` | `.` | Directory to walk when no files are given. |
+
+Files whose head carries `// Code generated ... DO NOT EDIT.` are exempt: those
+lines belong to the generator, and rewriting them on every regeneration is
+churn nobody reviews.
+
+`--fix` inserts the header **above** a `//go:build` constraint and keeps the
+blank line the constraint needs before the package clause, so constrained files
+still compile.
+
 ## Standalone use
 
-The hook is an ordinary CLI:
+Each hook is an ordinary CLI:
 
 ```sh
 go install github.com/blairham/pre-commit-hooks/cmd/check-go-version-sync@latest
@@ -95,7 +151,18 @@ check-go-version-sync -fix         # rewrite .tool-versions from go.mod
 check-go-version-sync -root ./path # scan a tree other than the cwd
 ```
 
-Exit codes: `0` in sync, `1` drift found, `2` the check itself failed.
+```sh
+go install github.com/blairham/pre-commit-hooks/cmd/check-license-headers@latest
+
+check-license-headers -license Apache-2.0        # report missing headers
+check-license-headers -license MIT internal/a.go # check named files only
+check-license-headers -ext .go,.rs -root ./src   # other languages and trees
+check-license-headers -license Apache-2.0 \
+    -copyright-text '2026 Jane Doe' -fix         # insert what is missing
+```
+
+Exit codes are the same for both: `0` clean, `1` something to fix, `2` the
+check itself failed.
 
 ## Compatibility
 

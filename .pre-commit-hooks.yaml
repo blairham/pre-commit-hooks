@@ -11,3 +11,23 @@
   language: golang
   files: '(^|/)go\.mod$|(^|/)\.tool-versions$'
   pass_filenames: false
+
+- id: check-license-headers
+  name: check license headers (SPDX)
+  description: |
+    Fails when a source file does not carry an SPDX header. A repository's root
+    LICENSE governs the repository but does not travel with a file copied out of
+    it, which is exactly when attribution matters — so the per-file header is
+    what keeps the notice attached to the work.
+
+    Checks for `SPDX-License-Identifier:` and, unless `-copyright=false`, for
+    `SPDX-FileCopyrightText:`. Pass `--license Apache-2.0` via args to require a
+    specific identifier rather than any. Files whose head carries a
+    `// Code generated ... DO NOT EDIT.` line are exempt. Pass `--fix` (with
+    `--copyright-text`) to insert the header instead of failing.
+
+    Defaults to Go files; override `types` or `files` for other languages and
+    pass `--ext` to match when it walks a tree.
+  entry: check-license-headers
+  language: golang
+  types: [go]
