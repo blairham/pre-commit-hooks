@@ -160,7 +160,6 @@ jobs:
   # renames and new jobs alike — when jobs change here, update this `needs`
   # list and nothing else.
   ci-ok:
-    name: CI OK
     needs: [pre-commit, changes, test, lint, hook]
     if: always()
     runs-on: ubuntu-latest
