@@ -6,7 +6,7 @@ Guidance for AI coding agents (Claude Code, Cursor, Copilot, Codex, OpenCode, â€
 
 Go-based [pre-commit](https://pre-commit.com) hooks, published for others to consume by `rev`. Each hook is a real Go binary declared with `language: golang`, so pre-commit builds it with `go install ./...` â€” no shell scripts, no Python.
 
-Currently one hook: `check-go-version-sync`, which keeps a module's `go` directive and its governing `.tool-versions` `golang` pin from drifting apart.
+Three hooks: `check-go-version-sync`, which keeps a module's `go` directive and its governing `.tool-versions` `golang` pin from drifting apart; `check-license-headers`, which requires an SPDX header on every source file; and `check-conflict-markers`, which fails on a committed conflict marker.
 
 ## The constraint that shapes this repo
 
@@ -41,6 +41,10 @@ make check          # fmt + vet + lint + test + check-versions
 .pre-commit-hooks.yaml         # Hook manifest consumers resolve by rev
 cmd/check-go-version-sync/     # CLI: flag parsing, exit codes, messaging
 internal/versionsync/          # The logic: parsing, module discovery, compare, fix
+cmd/check-license-headers/     # CLI
+internal/licenseheader/        # The logic: header detection, insertion
+cmd/check-conflict-markers/    # CLI
+internal/conflictmarkers/      # The logic: marker recognition, the separator rule
 ```
 
 ## Design notes

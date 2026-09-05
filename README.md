@@ -6,6 +6,12 @@ is no shell script, no Python, and nothing to install by hand.
 
 ## Hooks
 
+| Hook | Fails when |
+| --- | --- |
+| [`check-go-version-sync`](#check-go-version-sync) | A module's `go` directive and its governing `.tool-versions` pin disagree. |
+| [`check-license-headers`](#check-license-headers) | A source file has no SPDX header. |
+| [`check-conflict-markers`](#check-conflict-markers) | A file carries a committed conflict marker. |
+
 ### `check-go-version-sync`
 
 Fails when a module's `go` directive and the `golang` pin that governs it drift
@@ -138,6 +144,51 @@ churn nobody reviews.
 blank line the constraint needs before the package clause, so constrained files
 still compile.
 
+### `check-conflict-markers`
+
+Fails when a file carries a version-control conflict marker.
+
+```yaml
+repos:
+  - repo: https://github.com/blairham/pre-commit-hooks
+    rev: v0.3.0
+    hooks:
+      - id: check-conflict-markers
+```
+
+```
+docs/spec/semantics.md:1990: conflict marker |||||||
+
+1 conflict marker(s) found. Resolve the conflict and stage the result;
+if a marker belongs in the file, pass its path to -exclude.
+```
+
+**Why not the usual check.** The common conflict hook misses committed markers
+two ways. It knows only the three markers of git's default conflict style, so
+the `|||||||` base line that `diff3` and `zdiff3` produce goes unreported. And
+it scans only while a merge is in progress — which excludes the one case that
+matters, a marker that was already committed and is now just a line in a file.
+Between them, a base marker can live in a tree for weeks and be found by eye.
+
+**Why a bare `=======` is not enough to fail on.** A row of equals signs
+underlines a setext heading in Markdown, underlines a section title in
+reStructuredText, and rules off a block of plain text. Reporting it
+unconditionally is why conflict checks retreat to running only during a merge.
+This hook reports the separator only when the file also carries one of the
+other three markers — so it can scan every commit without failing on prose.
+
+A marker is exactly seven of its character at the start of a line, followed by
+the end of the line or a space: the shape git writes. A longer run is an ASCII
+rule, not a marker. Binary files and files past `--max-size` are skipped.
+
+#### Flags
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--exclude` | — | Comma-separated path patterns to skip. For a file that legitimately contains a marker — documentation about merging, or a test fixture. |
+| `--max-size` | `10485760` | Largest file to read, in bytes. |
+| `--root` | `.` | Directory to walk when no files are given. `.git` is always skipped. |
+
 ## Standalone use
 
 Each hook is an ordinary CLI:
@@ -161,7 +212,15 @@ check-license-headers -license Apache-2.0 \
     -copyright-text '2026 Jane Doe' -fix         # insert what is missing
 ```
 
-Exit codes are the same for both: `0` clean, `1` something to fix, `2` the
+```sh
+go install github.com/blairham/pre-commit-hooks/cmd/check-conflict-markers@latest
+
+check-conflict-markers                     # walk the cwd
+check-conflict-markers docs/spec.md a.go   # check named files only
+check-conflict-markers -exclude docs/merging.md,testdata/
+```
+
+Exit codes are the same for all three: `0` clean, `1` something to fix, `2` the
 check itself failed.
 
 ## Compatibility
