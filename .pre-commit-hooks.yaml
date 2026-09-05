@@ -31,3 +31,21 @@
   entry: check-license-headers
   language: golang
   types: [go]
+
+- id: check-conflict-markers
+  name: check conflict markers
+  description: |
+    Fails when a file carries a version-control conflict marker.
+
+    It differs from the usual check in two ways. It knows the `|||||||` base
+    marker that the diff3 and zdiff3 conflict styles produce, which the
+    three-marker checks miss. And it runs at every commit rather than only
+    while a merge is in progress — a marker that was already committed is
+    exactly the one a merge-only check can no longer reach.
+
+    A row of equals signs is only reported when the file carries one of the
+    other three markers, so a setext heading underline is not a conflict.
+    Binary and oversized files are skipped; pass `--exclude` for a path that
+    legitimately contains a marker, such as documentation about merging.
+  entry: check-conflict-markers
+  language: golang
