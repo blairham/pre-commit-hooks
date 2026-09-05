@@ -14,7 +14,6 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
         args: ['--maxkb=500']
-      - id: check-merge-conflict
       - id: detect-private-key
 
   # Go formatting
@@ -26,10 +25,14 @@ repos:
   # Dogfood: this repo's own published hook checks this repo's own pin.
   # -mode=min because go.mod's directive here is a compatibility floor, not a pin.
   - repo: https://github.com/blairham/pre-commit-hooks
-    rev: v0.1.0
+    rev: v0.3.0
     hooks:
       - id: check-go-version-sync
         args: [--mode=min]
+      # Also dogfooded: replaces upstream's check-merge-conflict, which knows
+      # only the default conflict style's three markers and scans only during a
+      # merge — so it cannot see a marker that was already committed.
+      - id: check-conflict-markers
 
   # golangci-lint at commit time, via the upstream hooks (no local scripts).
   # `golangci-lint-fmt` applies every formatter configured in .golangci.yml
