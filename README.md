@@ -11,6 +11,7 @@ is no shell script, no Python, and nothing to install by hand.
 | [`check-go-version-sync`](#check-go-version-sync) | A module's `go` directive and its governing `.tool-versions` pin disagree. |
 | [`check-license-headers`](#check-license-headers) | A source file has no SPDX header. |
 | [`check-conflict-markers`](#check-conflict-markers) | A file carries a committed conflict marker. |
+| [`go-vulncheck`](#go-vulncheck) | A vulnerability is known in code this module actually calls. |
 
 ### `check-go-version-sync`
 
@@ -235,3 +236,49 @@ module has to build with whatever Go a consumer already has on PATH.
 ## License
 
 MIT
+
+### `go-vulncheck`
+
+Fails when a dependency the module actually calls into has a known
+vulnerability, using Go's own database at <https://vuln.go.dev>.
+
+```yaml
+repos:
+  - repo: https://github.com/blairham/pre-commit-hooks
+    rev: v0.4.0
+    hooks:
+      - id: go-vulncheck
+```
+
+```
+Vulnerability #1: GO-2022-1059
+    Denial of service via crafted Accept-Language header in
+    golang.org/x/text/language
+  More info: https://pkg.go.dev/vuln/GO-2022-1059
+  Module: golang.org/x/text
+    Found in: golang.org/x/text@v0.3.7
+    Fixed in: golang.org/x/text@v0.3.8
+    Example traces found:
+      #1: p/p.go:7:43: p.Parse calls language.ParseAcceptLanguage
+
+Your code is affected by 1 vulnerability from 1 module.
+```
+
+**Why it is quiet enough to run at commit time.** It is symbol-aware rather
+than version-aware. On the run above it also found 2 vulnerabilities in
+imported packages and 27 in required modules, and reported all 29 as
+informational because nothing in the module reaches them. A manifest scanner
+would have failed the commit 29 times over, and the response to a hook that
+cries wolf is to stop reading it — so the reachability analysis is not a
+refinement here, it is the thing that makes the hook worth having.
+
+**Why it is gated on `go.mod` and `go.sum`.** The answer can only change when
+the module graph changes or when the database learns something new. The first
+is what this watches; the second belongs to CI, on a schedule, because no
+commit hook can catch an advisory published while nobody was committing. A
+scanner that ran on every commit would spend seconds of each one re-deriving
+an answer that had not moved, which is how an expensive hook gets disabled and
+then is not there when it matters.
+
+Override `files` to widen it, and note that the hook needs network access the
+first time to fetch the database.
