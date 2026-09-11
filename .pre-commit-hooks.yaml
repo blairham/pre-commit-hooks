@@ -49,3 +49,31 @@
     legitimately contains a marker, such as documentation about merging.
   entry: check-conflict-markers
   language: golang
+
+- id: go-vulncheck
+  name: govulncheck (known vulnerabilities reaching this module)
+  description: |
+    Fails when a dependency the module actually calls into has a known
+    vulnerability, using Go's own database at https://vuln.go.dev.
+
+    It is symbol-aware rather than version-aware, which is the difference
+    between this and a manifest scanner: a CVE in a package the module links
+    but never reaches is reported as unaffected, so the hook stays quiet
+    instead of teaching people to ignore it. That property is the reason it
+    can run at commit time at all.
+
+    Gated on `go.mod` and `go.sum` by default, because the answer can only
+    change when the module graph does — or when the database learns something
+    new, which CI is the place to notice. A scanner that ran on every commit
+    would spend seconds of every commit re-deriving an answer that had not
+    moved, which is how an expensive hook gets disabled and then is not there
+    when it matters.
+
+    Requires network access the first time, to fetch the vulnerability
+    database.
+  entry: govulncheck
+  language: golang
+  additional_dependencies: ['golang.org/x/vuln/cmd/govulncheck@v1.8.0']
+  files: '(^|/)go\.(mod|sum)$'
+  pass_filenames: false
+  args: ['./...']
