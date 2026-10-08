@@ -18,7 +18,7 @@ Consequences, all deliberate:
 
 - The `go` directive is low (`go 1.22.0`) and should only be raised for a real need.
 - **No dependencies.** Everything is stdlib.
-- **No `tool` block in `go.mod`** — that alone would require Go 1.24+. This is why the Makefile uses plain `gofmt` rather than `go tool gofumpt`, unlike the sibling repos under this tree. golangci-lint runs from CI (or from PATH if installed), never as a `go tool`.
+- **No `tool` block in `go.mod`** — that alone would require Go 1.24+. This is why the Makefile uses plain `gofmt` rather than `go tool gofumpt`, unlike the sibling repos under this tree. golangci-lint runs as a pre-commit hook and in CI, never as a `go tool` and never by hand.
 - `.tool-versions` here pins the *development* toolchain and is deliberately **newer** than the `go` directive — the `min` case the tool itself models.
 
 ## Quick Reference
@@ -29,10 +29,9 @@ make test           # go test -race ./...
 make test-cover     # Tests + coverage.html
 make vet            # go vet ./...
 make fmt            # gofmt -s -w .   (NOT gofumpt — see above)
-make lint           # golangci-lint if on PATH, else a no-op with a note
 make check-versions # Dogfood: run this repo's own hook on itself (-mode=min)
 make sync           # Rewrite .tool-versions from go.mod
-make check          # fmt + vet + lint + test + check-versions
+make check          # fmt + vet + test + check-versions (no lint target: golangci-lint runs as a pre-commit hook and in CI)
 ```
 
 ## Project Structure
@@ -76,5 +75,5 @@ Consumers pin a tag (`rev: v0.1.0`), so **tags are the release mechanism** — t
 ## Code Conventions
 
 - Formatter: `gofmt -s`. Not gofumpt (no `tool` block — see the constraint above).
-- Linter: golangci-lint v2, config in `.golangci.yml`, enforced in CI.
+- Linter: golangci-lint v2, config in `.golangci.yml`, run as a pre-commit hook and enforced in CI.
 - Commits/PRs: no AI-attribution trailers (see the tree-level AGENTS.md).

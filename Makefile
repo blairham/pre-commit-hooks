@@ -3,9 +3,9 @@ BUILD_DIR := build
 # NOTE: no `go tool` targets here on purpose. A go.mod `tool` block requires
 # Go 1.24+, and this module deliberately targets an older release so it builds
 # under pre-commit's GOTOOLCHAIN=local. Formatting uses the toolchain's own
-# gofmt; golangci-lint runs from CI (or from PATH if you have it installed).
+# gofmt; golangci-lint runs as a pre-commit hook and in CI.
 
-.PHONY: all build clean test test-cover lint fmt vet tidy check check-versions sync
+.PHONY: all build clean test test-cover fmt vet tidy check check-versions sync
 
 all: build
 
@@ -30,11 +30,6 @@ vet:
 fmt:
 	gofmt -s -w .
 
-lint:
-	@command -v golangci-lint >/dev/null 2>&1 \
-		&& golangci-lint run ./... \
-		|| echo "golangci-lint not on PATH — skipping (CI runs it)"
-
 tidy:
 	go mod tidy
 
@@ -45,4 +40,5 @@ check-versions:
 sync:
 	go run ./cmd/check-go-version-sync -fix || true
 
-check: fmt vet lint test check-versions
+# There is no lint target: golangci-lint runs as a pre-commit hook and in CI.
+check: fmt vet test check-versions
