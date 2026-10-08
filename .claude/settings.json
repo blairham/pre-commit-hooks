@@ -8,7 +8,6 @@
       "Bash(go vet:*)",
       "Bash(go run:*)",
       "Bash(gofmt:*)",
-      "Bash(golangci-lint:*)",
       "Bash(pre-commit run:*)",
       "Bash(pre-commit try-repo:*)"
     ]
