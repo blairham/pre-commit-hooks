@@ -45,7 +45,7 @@ repos:
   # go.mod `tool` block — this repo adds no dependencies (see AGENTS.md). Keep
   # this `rev` in lockstep with .tool-versions and the CI action instead.
   - repo: https://github.com/golangci/golangci-lint
-    rev: v2.12.2
+    rev: v2.14.0
     hooks:
       - id: golangci-lint-fmt
       # The diff-scoped hook (`--new-from-rev HEAD`), deliberately: this runs on
