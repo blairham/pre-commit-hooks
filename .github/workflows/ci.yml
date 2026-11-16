@@ -156,7 +156,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         # The oldest supported toolchain and a current one: hooks are installed
         # with GOTOOLCHAIN=local, so this module must build on both.
-        go: ["1.22", "1.26"]
+        go: ["1.22", "1.27"]
     steps:
     - uses: actions/checkout@v6
       if: needs.changes.outputs.code == 'true'

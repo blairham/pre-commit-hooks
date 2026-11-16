@@ -66,7 +66,7 @@ internal/conflictmarkers/      # The logic: marker recognition, the separator ru
 ## Testing
 
 - `go test -race ./...`. Tests build fixture trees with `t.TempDir()` and never touch the real filesystem outside it.
-- CI runs the matrix `{ubuntu, macos} × {go 1.22, go 1.26}` — the oldest supported toolchain and a current one — plus a `hook` job that installs and runs the hook through real pre-commit, which is the only test that proves the consumer path works.
+- CI runs the matrix `{ubuntu, macos} × {go 1.22, go 1.27}` — the oldest supported toolchain and a current one — plus a `hook` job that installs and runs the hook through real pre-commit, which is the only test that proves the consumer path works.
 
 ## Releasing
 
