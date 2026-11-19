@@ -6,7 +6,7 @@
 # go.mod's `go` directive, which is a compatibility floor for consumers (see the
 # comment in go.mod). That is exactly the case check-go-version-sync's -mode=min
 # exists for, and this repo checks itself that way.
-golang 1.26.1
+golang 1.27.4
 
 # Linting (CI-enforced; local convenience)
 golangci-lint 2.14.0
